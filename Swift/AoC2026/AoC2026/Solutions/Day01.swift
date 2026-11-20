@@ -1,6 +1,6 @@
 //
 //  Day01.swift
-//  AoC2026
+//  AoC2026 
 //
 
 import Foundation
