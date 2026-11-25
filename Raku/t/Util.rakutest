@@ -1,0 +1,32 @@
+#!/usr/bin/env raku
+
+use Test;
+use AOC::Util;
+
+# Resolve the fixture relative to this file, so the tests work from any directory.
+my $input-file = $?FILE.IO.resolve.parent(3).add('Input/day00_test.txt').Str;
+
+subtest 'read_input', {
+	my @lines = read_input($input-file);
+	is +@lines,   10,       'reads every line, including blank ones';
+	is @lines[4], 'G1, L0', 'line 4 has the expected content';
+
+	is +read_input($input-file, True), 8, 'skips blank lines when asked';
+}
+
+subtest 'read_grouped_input', {
+	is +read_grouped_input($input-file), 3, 'splits the file into groups at blank lines';
+
+	is-deeply read_grouped_input($input-file, 1).List, ('G1, L0', 'G1, L1'),
+		'returns only the requested group';
+
+	is +read_grouped_input($input-file, 10), 0, 'out-of-range group index returns an empty list';
+}
+
+subtest 'approx_equal', {
+	ok  approx_equal(10.0, 11.0 - 1.0),            'equal with the default threshold';
+	ok  approx_equal(10.0, 11.0 - 1.0, 0.0000001), 'equal with a custom threshold';
+	nok approx_equal(10.0, 10.01),                 'not equal when outside the threshold';
+}
+
+done-testing;

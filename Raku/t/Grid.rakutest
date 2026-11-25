@@ -1,0 +1,117 @@
+#!/usr/bin/env raku
+
+use Test;
+use AOC::Geometry;
+use AOC::Grid;
+
+# A custom value type that supplies its own glyph.
+class GridObject does GridGlyph {
+	has Int $.id;
+	has Str $.type;
+	has Int $.hp;
+
+	method glyph(--> Str) { $.type.substr(0, 1) }
+}
+
+subtest 'Grid', {
+	# The nested subtests share one grid and run in order: each step builds on the last.
+	my $grid = Grid.new(default => '.', rule => AdjacencyRule::ROOK);
+
+	my $a      = Coord.from_ints(1, 1);
+	my $b      = Coord.from_ints(2, 2);
+	my $unset  = Coord.from_ints(3, 3);
+	my $d      = Coord.from_ints(4, 4);
+	my $elf    = Coord.from_ints(1, 4);
+	my $goblin = Coord.from_ints(2, 4);
+	my $santa  = Coord.from_ints(3, 4);
+
+	subtest 'new grid', {
+		is $grid.default, '.',                     'default value';
+		cmp-ok $grid.rule, '===', AdjacencyRule::ROOK, 'adjacency rule';
+		ok $grid.extent.is_empty,                  'extent starts empty';
+	}
+
+	subtest 'set and get', {
+		$grid.set($a, 'A');
+		$grid.set($b, 'B');
+		$grid.set($d, 'D');
+
+		is $grid.get($a),     'A',           'get a set value';
+		is $grid.get($b),     'B',           'get another set value';
+		is $grid.get($d),     'D',           'get a third set value';
+		is $grid.get($unset), $grid.default, 'unset coord returns the default';
+	}
+
+	subtest 'glyphs from non-string values', {
+		$grid.set($elf,    GridObject.new(id => 1, type => 'Elf', hp => 100));
+		$grid.set($goblin, %(id => 2, type => 'Goblin', hp => 95, glyph => 'G'));
+		$grid.set($santa,  ['S', 3, 'Santa', 110]);
+
+		is $grid.get_glyph($elf),    'E', 'object doing GridGlyph uses its glyph method';
+		is $grid.get_glyph($goblin), 'G', "hash uses its 'glyph' key";
+		is $grid.get_glyph($santa),  'S', 'array uses its first element';
+	}
+
+	subtest 'extent', {
+		is-deeply $grid.extent, Extent.from_ints(1, 1, 4, 4), 'extent grows to fit set coords';
+	}
+
+	subtest 'coords', {
+		is +$grid.coords, 6, 'returns every set coord';
+		is-deeply $grid.coords('B').List, ($b,), 'filters coords by glyph';
+	}
+
+	subtest 'histogram', {
+		$grid.set($unset, 'B');
+
+		my %hist = $grid.histogram;
+		is-deeply %hist, { A => 1, B => 2, D => 1, E => 1, G => 1, S => 1 },
+			'counts set values only';
+
+		%hist = $grid.histogram(True);
+		is-deeply %hist, { A => 1, B => 2, D => 1, E => 1, G => 1, S => 1, '.' => 9 },
+			'includes unset cells when asked';
+	}
+
+	subtest 'neighbors', {
+		is-deeply $grid.neighbors($b),
+			[Coord.from_ints(2, 1), Coord.from_ints(3, 2), Coord.from_ints(2, 3), Coord.from_ints(1, 2)],
+			'ROOK neighbours in N, E, S, W order';
+	}
+
+	subtest 'sprint', {
+		is $grid.sprint, "A . . . \n. B . . \n. . B . \nE G S D \n", 'renders the grid';
+
+		is $grid.sprint(invert_y => True), "E G S D \n. . B . \n. B . . \nA . . . \n",
+			'renders with y inverted';
+
+		is $grid.sprint(markers => %(Coord.from_ints(4, 1) => '*')),
+			"A . . * \n. B . . \n. . B . \nE G S D \n",
+			'markers override cell glyphs';
+	}
+
+	subtest 'clear', {
+		$grid.clear($unset);
+		is $grid.get($unset), '.', 'cleared coord returns the default';
+
+		my $original-extent = $grid.extent;
+		my $far = Coord.from_ints(100, 100);
+
+		$grid.set($far, 'X');
+		is-deeply $grid.extent.se, $far, 'extent grows to fit a distant coord';
+
+		$grid.clear($far, reset_extent => True);
+		is-deeply $grid.extent, $original-extent, 'reset_extent shrinks the extent again';
+	}
+}
+
+subtest 'AGrid', {
+	my $grid = AGrid.new(default => '.', rule => AdjacencyRule::ROOK, x => 10, y => 8);
+
+	is $grid.default, '.',                         'default value';
+	cmp-ok $grid.rule, '===', AdjacencyRule::ROOK, 'adjacency rule';
+	nok $grid.extent.is_empty,                     'extent is not empty';
+	is $grid.extent.area, 99,                      'area is (x+1) * (y+1)';
+}
+
+done-testing;

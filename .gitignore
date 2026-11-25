@@ -2,3 +2,5 @@
 Input/*_challenge.txt
 Swift/AoC2026/build
 Swift/AoC2026/build/Release
+/Raku/.precomp
+.DS_Store

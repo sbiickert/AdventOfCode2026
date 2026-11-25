@@ -1,0 +1,178 @@
+#!/usr/bin/env raku
+
+use Test;
+use AOC::Geometry;
+
+subtest 'Coord', {
+	my $c      = Coord.new(x => 10, y => 30);
+	my $other  = Coord.new(x => 5,  y => 20);
+	my $origin = Coord.origin;
+
+	subtest 'construction and equality', {
+		is ~$c, '[10,30]', 'Str';
+		is-deeply Coord.from_str(~$c), $c,         'from_str round-trips Str';
+		is-deeply Coord.new(x => 10, y => 30), $c, 'coords with equal values are eqv';
+		nok $c eqv $other,                         'coords with different values are not eqv';
+		is-deeply $origin, Coord.new(x => 0, y => 0), 'origin is (0,0)';
+	}
+
+	subtest 'distances', {
+		is-deeply $c.delta($other), Coord.from_ints(-5, -10), 'delta';
+		is-approx $c.distance_to($other), 11.1803398874989,  'distance_to';
+		is $c.manhattan_distance_to($other), 15,             'manhattan_distance_to';
+	}
+
+	subtest 'get_offset', {
+		for ('N', 0, -1),     # compass direction
+		    ('<', -1, 0),     # alias
+		    ('?', 0, 0)       # unknown direction gives no offset
+		-> ($dir, $x, $y) {
+			is-deeply Coord.get_offset($dir), Coord.from_ints($x, $y), "get_offset('$dir')";
+		}
+	}
+
+	subtest 'adjacency', {
+		my $diagonal = Coord.from_ints(1, 1);
+		nok $origin.is_adjacent($diagonal),                        'diagonal is not adjacent under ROOK';
+		ok  $origin.is_adjacent($diagonal, AdjacencyRule::BISHOP), 'diagonal is adjacent under BISHOP';
+		is +$origin.get_adjacent_coords, 4,                        'ROOK gives 4 adjacent coords';
+	}
+}
+
+subtest 'Position', {
+	my $p = Position.new(coord => Coord.origin);
+	is-deeply $p.coord, Coord.origin, 'coord is set';
+	is $p.dir, 'N', 'direction defaults to N';
+
+	$p = Position.new(coord => Coord.from_ints(5, 5), dir => '<');
+	is $p.dir, 'W', "direction alias '<' resolves to W";
+
+	$p .= turn('CW');
+	is $p.dir, 'N', 'turn CW once';
+	$p .= turn('CCW');
+	is $p.dir, 'W', 'turn CCW once';
+	$p .= turn('CCW') for ^6;
+	is $p.dir, 'E', 'turn CCW six times';
+
+	$p .= move_forward;
+	is-deeply $p.coord, Coord.from_ints(6, 5),  'move forward 1';
+	$p .= move_forward(4);
+	is-deeply $p.coord, Coord.from_ints(10, 5), 'move forward 4';
+
+	my $bad   = Position.new(coord => Coord.origin, dir => '?');
+	my $moved = $bad.move_forward;
+	is $bad.dir, 'N', 'invalid direction falls back to N';
+	nok $bad eqv $moved, 'moving produces a different position';
+	is-deeply $moved.coord, Coord.from_ints(0, -1), 'moved north';
+}
+
+subtest 'Extent1D', {
+	my $wide     = Extent1D.new(range => 0..10);
+	my $reversed = Extent1D.new(range => 4..2);    # normalised to 2..4
+	my $right    = Extent1D.new(range => 4..10);
+	my $middle   = Extent1D.new(range => 5..8);
+
+	subtest 'size and limits', {
+		is $wide.size,    11, 'size';
+		is $reversed.min, 2,  'reversed range is normalised: min';
+		is $reversed.max, 4,  'reversed range is normalised: max';
+	}
+
+	subtest 'contains and overlaps', {
+		ok  $wide.contains($reversed),    'large extent contains small extent';
+		nok $reversed.contains($wide),    'small extent does not contain large extent';
+		ok  $wide.contains($right),       'contains an extent that shares its max';
+		ok  $wide.overlaps($reversed),    'overlaps a contained extent';
+		ok  $reversed.overlaps($right),   'overlaps when touching at a limit';
+		nok $reversed.overlaps($middle),  'disjoint extents do not overlap';
+
+		ok  $wide.contains(5),  'contains a value inside';
+		nok $wide.contains(-1), 'does not contain a value below min';
+		nok $wide.contains(11), 'does not contain a value above max';
+	}
+
+	subtest 'intersect and union', {
+		nok $reversed.intersect($middle).defined, 'intersect of disjoint extents is Nil';
+		is $reversed.intersect($right).size, 1,   'intersect touching at a limit has size 1';
+		is $reversed.union($middle).size,    7,   'union spans the gap';
+	}
+
+	subtest 'equality', {
+		is-deeply $wide, Extent1D.new(range => 0..10), 'equal extents are eqv';
+		nok $wide eqv $reversed,                       'different extents are not eqv';
+	}
+}
+
+subtest 'Extent', {
+	my $p1 = Coord.from_ints(-1, 1);
+	my $p2 = Coord.from_ints( 2, 8);
+	my $p3 = Coord.from_ints( 3, 3);
+	my $p4 = Coord.from_ints( 4, 4);
+
+	my $two   = Extent.from_coords(($p1, $p2));
+	my $three = Extent.from_coords(($p3, $p2, $p1));
+	my $grown = $three.expand_to_fit($p4);
+
+	subtest 'construction', {
+		is-deeply $two,   Extent.from_ints(-1, 1, 2, 8), 'from_coords with two coords';
+		is-deeply $three, Extent.from_ints(-1, 1, 3, 8), 'from_coords with three coords';
+		is-deeply $grown, Extent.from_ints(-1, 1, 4, 8), 'expand_to_fit';
+		is-deeply $grown.clone, $grown,                  'clone is eqv to the original';
+	}
+
+	subtest 'corners and size', {
+		is-deeply $grown.nw, Coord.from_ints(-1, 1), 'nw';
+		is-deeply $grown.se, Coord.from_ints( 4, 8), 'se';
+		is $three.width,  5,  'width';
+		is $three.height, 8,  'height';
+		is $three.area,   40, 'area';
+		is +$three.all_coords, $three.area, 'all_coords returns one coord per cell';
+	}
+
+	subtest 'contains', {
+		ok $three.contains($p2), 'contains a corner coord';
+		ok $grown.contains($p4), 'contains the coord it was expanded to fit';
+	}
+
+	subtest 'inset', {
+		is-deeply $two.inset(1), Extent.from_ints(0, 2, 1, 7), 'inset by 1';
+		nok $two.inset(2).is_empty, 'inset past zero width is not empty';
+	}
+
+	my $base = Extent.from_ints(1, 1, 10, 10);
+
+	subtest 'intersect', {
+		for (5, 5, 12, 12)  => (5, 5, 10, 10),    # overlapping corner
+		    (5, 5, 7, 7)    => (5, 5, 7, 7),      # fully inside
+		    (1, 1, 12, 2)   => (1, 1, 10, 2),     # strip along an edge
+		    (1, 10, 10, 20) => (1, 10, 10, 10)    # sharing one row
+		-> $case {
+			my $other = Extent.from_ints(|$case.key);
+			is-deeply $base.intersect($other), Extent.from_ints(|$case.value), "intersect with $other";
+		}
+		ok $base.intersect(Extent.from_ints(11, 11, 12, 12)).is_empty, 'disjoint intersect is empty';
+	}
+
+	subtest 'union', {
+		# Each case: the other extent, and the pieces the union should split into.
+		# Pieces are compared in sorted order, so the order union() returns them in doesn't matter.
+		my @cases =
+			(5, 5, 12, 12) => ((5,5,10,10), (1,1,4,4), (1,5,4,10), (5,1,10,4),
+			                   (11,11,12,12), (11,5,12,10), (5,11,10,12)),
+			(5, 5, 7, 7)   => ((5,5,7,7), (1,1,4,4), (1,8,4,10), (1,5,4,7), (8,1,10,4),
+			                   (8,8,10,10), (8,5,10,7), (5,1,7,4), (5,8,7,10)),
+			(1, 1, 12, 2)  => ((1,1,10,2), (1,3,10,10), (11,1,12,2)),
+			(11, 11, 12, 12) => ((1,1,10,10), (11,11,12,12)),
+			(1, 10, 10, 20)  => ((1,10,10,10), (1,1,10,9), (1,11,10,20));
+
+		for @cases -> $case {
+			my $other    = Extent.from_ints(|$case.key);
+			my @expected = $case.value.map({ Extent.from_ints(|$_) });
+			is-deeply sorted($base.union($other)), sorted(@expected), "union with $other";
+		}
+	}
+}
+
+done-testing;
+
+sub sorted(@extents) { @extents.sort(~*).List }
