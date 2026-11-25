@@ -4,12 +4,12 @@ unit module AOC::Util;
 
 # Reads the specified file and returns an array of strings.
 
-# If $remove_empty_lines is true, will remove any zero-length lines
+# If $remove-empty-lines is true, will remove any zero-length lines
 # (after chomp)
-sub read_input(Str $filename, Bool $remove_empty_lines = False) is export {
+sub read-input(Str $filename, Bool $remove-empty-lines = False) is export {
 	my @content = $filename.IO.lines;
 	
-	if $remove_empty_lines {
+	if $remove-empty-lines {
 		@content = grep { .Str.chars > 0 }, @content;
 	}
 	
@@ -18,15 +18,15 @@ sub read_input(Str $filename, Bool $remove_empty_lines = False) is export {
 
 # Read Grouped Input
 
-# If $group_index is not given or negative, then all
+# If $group-index is not given or negative, then all
 # groups are returned as an array of array refs.
 
-# If $group_index is a valid index for a group, then
+# If $group-index is a valid index for a group, then
 # only the lines of that group are returned as an array of strings.
 
-# If $group_index is out of range, then an empty array is returned.
-sub read_grouped_input(Str $filename, Int $group_index = -1) is export {
-	my @content = read_input($filename);
+# If $group-index is out of range, then an empty array is returned.
+sub read-grouped-input(Str $filename, Int $group-index = -1) is export {
+	my @content = read-input($filename);
 	my @groups = [];
 	my @group = [];
 	
@@ -44,9 +44,9 @@ sub read_grouped_input(Str $filename, Int $group_index = -1) is export {
 		@groups.push(@group);
 	}
 	
-	if $group_index >= 0 {
+	if $group-index >= 0 {
 		#say @groups;
-		return $group_index < @groups.elems ?? @groups[$group_index].flat !! [];
+		return $group-index < @groups.elems ?? @groups[$group-index].flat !! [];
 	}
 	
 	return @groups;
@@ -59,7 +59,7 @@ sub read_grouped_input(Str $filename, Int $group_index = -1) is export {
 
 # $threshold is the maximum allowable difference between $float1
 # and $float2 for them to be considered equal.
-sub approx_equal(Rat $float1, Rat $float2, Rat $threshold = 0.001) returns Bool is export {
+sub approx-equal(Rat $float1, Rat $float2, Rat $threshold = 0.001) returns Bool is export {
 	my $difference = abs($float1 - $float2);
 	return $difference < $threshold;
 }
@@ -69,7 +69,7 @@ sub approx_equal(Rat $float1, Rat $float2, Rat $threshold = 0.001) returns Bool 
 
 # Takes an array with at least two dimensions and swaps rows and columns
 # e.g. a 2 x 10 matrix becomes a 10 x 2 matrix
-sub pivot_matrix(@matrix) is export {
+sub pivot-matrix(@matrix) is export {
 	my @pivot = ();
 
 	my $nrow = @matrix.elems;

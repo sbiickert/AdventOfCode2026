@@ -28,17 +28,17 @@ class Grid is export {
 		return $.default;
 	}
 	
-	multi method get_glyph(Str $key --> Str) {
+	multi method get-glyph(Str $key --> Str) {
 		my $value = self.get($key);
-		return self!glyph_from_value($value);
+		return self!glyph-from-value($value);
 	}
 	
-	multi method get_glyph(Coord $key --> Str) {
+	multi method get-glyph(Coord $key --> Str) {
 		my $value = self.get($key);
-		return self!glyph_from_value($value);
+		return self!glyph-from-value($value);
 	}
 	
-	method !glyph_from_value(Any $value --> Str) {
+	method !glyph-from-value(Any $value --> Str) {
 		if $value.isa(List) {
 			return $value[0].Str;
 		}
@@ -56,49 +56,49 @@ class Grid is export {
 		
 		# Update the extent to include the $coord
 		if ! $.extent.contains($key) {
-			my $temp = $.extent.expand_to_fit($key);
+			my $temp = $.extent.expand-to-fit($key);
 			$!extent = $temp;
 		}
 	}
 	
-	method set_rule(AdjacencyRule $r) {
+	method set-rule(AdjacencyRule $r) {
 		self.rule = $r;
 	}
 	
-	method clear(Coord $key, Bool :$reset_extent = False) {
+	method clear(Coord $key, Bool :$reset-extent = False) {
 		%!data{$key.Str}:delete;
-		self!reset_extent if $reset_extent;
+		self!reset-extent if $reset-extent;
 	}
 	
 	method extent(--> Extent) { return $!extent; }
 	
-	method !reset_extent() {
-		$!extent = Extent.from_coords( self.coords );
+	method !reset-extent() {
+		$!extent = Extent.from-coords( self.coords );
 	}
 	
-	method coords(Str $with_value = '') {
+	method coords(Str $with-value = '') {
 		my Coord @result = ();
 		for %!data.keys -> $key {
-			if $with_value.chars == 0 || self.get_glyph($key) eq $with_value {
-				@result.push(Coord.from_str($key));
+			if $with-value.chars == 0 || self.get-glyph($key) eq $with-value {
+				@result.push(Coord.from-str($key));
 			}
 		}
 		return @result;
 	}
 	
-	method histogram(Bool $include_unset = False --> Hash) {
+	method histogram(Bool $include-unset = False --> Hash) {
 		my Int %hist is default(0);
 		
-		my Coord @coords_to_summarize = ();
-		if ($include_unset) {
-			@coords_to_summarize = self.extent.all_coords;
+		my Coord @coords-to-summarize = ();
+		if ($include-unset) {
+			@coords-to-summarize = self.extent.all-coords;
 		}
 		else {
-			@coords_to_summarize = self.coords;
+			@coords-to-summarize = self.coords;
 		}
 		
-		for @coords_to_summarize -> $c {
-			my $val = self.get_glyph($c);
+		for @coords-to-summarize -> $c {
+			my $val = self.get-glyph($c);
 			%hist{$val} = %hist{$val} + 1;
 		}
 		
@@ -106,47 +106,47 @@ class Grid is export {
 	}
 	
 	method neighbors(Coord $c --> Array) {
-		return $c.get_adjacent_coords($.rule);
+		return $c.get-adjacent-coords($.rule);
 	}
 
-	method flood_fill(Coord $c, $value) {
+	method flood-fill(Coord $c, $value) {
 		# say "fill at $c with $value";
-		my $local_value = self.get($c);
+		my $local-value = self.get($c);
 		self.set($c, $value);
 		my @neighbors = self.neighbors($c);
 		my $ext = self.extent;
 		for @neighbors -> $n {
-			self.flood_fill($n, $value) if self.get($n) eq $local_value && $ext.contains($n);
+			self.flood-fill($n, $value) if self.get($n) eq $local-value && $ext.contains($n);
 		}
 	}
 	
-	method print(:%markers = {}, Bool :$invert_y = False) {
-		print self.sprint(markers => %markers, invert_y => $invert_y);
+	method print(:%markers = {}, Bool :$invert-y = False) {
+		print self.sprint(markers => %markers, invert-y => $invert-y);
 	}
 	
-	method sprint(:%markers = {}, Bool :$invert_y = False --> Str) {
+	method sprint(:%markers = {}, Bool :$invert-y = False --> Str) {
 		my $str = '';
-		return $str if $!extent.is_empty;
+		return $str if $!extent.is-empty;
 		
 		my $xmin = $!extent.min.x;
 		my $xmax = $!extent.max.x;
 		my $ymin = $!extent.min.y;
 		my $ymax = $!extent.max.y;
 		
-		my @y_indexes = ();
+		my @y-indexes = ();
 		for ($ymin..$ymax) -> $y {
-			@y_indexes.push($y);
+			@y-indexes.push($y);
 		}
-		@y_indexes = @y_indexes.reverse if $invert_y;
+		@y-indexes = @y-indexes.reverse if $invert-y;
 
-		for @y_indexes -> $y {
+		for @y-indexes -> $y {
 			my @row = ();
 			for ($xmin..$xmax) -> $x {
-				my $c = Coord.from_ints($x, $y);
-				my $c_str = $c.Str;
-				my $glyph = self.get_glyph($c_str);
-				if %markers.keys.elems > 0 && (%markers{$c_str}:exists) {
-					$glyph = %markers{$c_str};
+				my $c = Coord.from-ints($x, $y);
+				my $c-str = $c.Str;
+				my $glyph = self.get-glyph($c-str);
+				if %markers.keys.elems > 0 && (%markers{$c-str}:exists) {
+					$glyph = %markers{$c-str};
 				}
 				@row.push($glyph);
 			}
@@ -162,7 +162,7 @@ class Grid is export {
 			my @cols = @rows[$r].split('', :skip-empty);
 			for 0..@cols.end -> $c {
 				if @cols[$c] ne $.default {
-					self.set(Coord.from_ints($c, $r), @cols[$c]);
+					self.set(Coord.from-ints($c, $r), @cols[$c]);
 				}
 			}
 		}
@@ -179,27 +179,27 @@ class AGrid is export {
 
 	submethod TWEAK {
 		@!data = [$!default xx ($!x + 1)] xx ($!y + 1);
-		$!extent = Extent.from_ints(0, 0, $!x, $!y);
+		$!extent = Extent.from-ints(0, 0, $!x, $!y);
 	}
 	
 	method get(Coord $key --> Any) {
-		self.get_xy($key.x, $key.y);
+		self.get-xy($key.x, $key.y);
 	}
 
-	method get_xy(Int $x, Int $y --> Any) {
+	method get-xy(Int $x, Int $y --> Any) {
 		return @!data[$y][$x];
 	}
 
-	method get_glyph(Coord $key --> Str) {
-		self.get_glyph_xy($key.x, $key.y);
+	method get-glyph(Coord $key --> Str) {
+		self.get-glyph-xy($key.x, $key.y);
 	}
 
-	method get_glyph_xy(Int $x, Int $y --> Str) {
-		my $value = self.get_xy($x, $y);
-		return self!glyph_from_value($value);
+	method get-glyph-xy(Int $x, Int $y --> Str) {
+		my $value = self.get-xy($x, $y);
+		return self!glyph-from-value($value);
 	}
 	
-	method !glyph_from_value(Any $value --> Str) {
+	method !glyph-from-value(Any $value --> Str) {
 		if $value.isa(List) {
 			return $value[0].Str;
 		}
@@ -213,76 +213,76 @@ class AGrid is export {
 	}
 
 	method set(Coord $key, Any $value) {
-		self.set_xy($key.x, $key.y, $value);
+		self.set-xy($key.x, $key.y, $value);
 	}
 
-	method set_xy(Int $x, int $y, Any $value) {
+	method set-xy(Int $x, int $y, Any $value) {
 		@!data[$y][$x] = $value;
 	}
 	
-	method set_rule(AdjacencyRule $r) {
+	method set-rule(AdjacencyRule $r) {
 		self.rule = $r;
 	}
 	
 	method clear(Coord $key) {
-		self.clear_xy($key.x, $key.y);
+		self.clear-xy($key.x, $key.y);
 	}
 
-	method clear_xy(Int $x, Int $y) {
+	method clear-xy(Int $x, Int $y) {
 		@!data[$y][$x] = $.default;
 	}
 	
 	method extent(--> Extent) { return $!extent; }
 
-	method histogram(Bool $include_unset = False --> Hash) {
+	method histogram(Bool $include-unset = False --> Hash) {
 		# TODO
 	}
 
 	method neighbors(Coord $c --> Array) {
-		return $c.get_adjacent_coords($.rule);
+		return $c.get-adjacent-coords($.rule);
 	}
 
-	method neighbors_xy(Int $x, Int $y --> Array) {
+	method neighbors-xy(Int $x, Int $y --> Array) {
 		# TODO
 	}
 
-	method flood_fill(Coord $c, Any $value) {
+	method flood-fill(Coord $c, Any $value) {
 		# say "fill at $c with $value";
-		my $local_value = self.get($c);
+		my $local-value = self.get($c);
 		self.set($c, $value);
 		my @neighbors = self.neighbors($c);
 		my $ext = self.extent;
 		for @neighbors -> $n {
-			self.flood_fill($n, $value) if self.get($n) eq $local_value && $ext.contains($n);
+			self.flood-fill($n, $value) if self.get($n) eq $local-value && $ext.contains($n);
 		}
 	}
 	
-	method print(:%markers = {}, Bool :$invert_y = False) {
-		print self.sprint(markers => %markers, invert_y => $invert_y);
+	method print(:%markers = {}, Bool :$invert-y = False) {
+		print self.sprint(markers => %markers, invert-y => $invert-y);
 	}
 	
-	method sprint(:%markers = {}, Bool :$invert_y = False --> Str) {
+	method sprint(:%markers = {}, Bool :$invert-y = False --> Str) {
 		my $str = '';
-		return $str if $!extent.is_empty;
+		return $str if $!extent.is-empty;
 		
 		my $xmin = 0;
 		my $xmax = $.x;
 		my $ymin = 0;
 		my $ymax = $.y;
 		
-		my @y_indexes = ();
+		my @y-indexes = ();
 		for ($ymin..$ymax) -> $y {
-			@y_indexes.push($y);
+			@y-indexes.push($y);
 		}
-		@y_indexes = @y_indexes.reverse if $invert_y;
+		@y-indexes = @y-indexes.reverse if $invert-y;
 
-		for @y_indexes -> $y {
+		for @y-indexes -> $y {
 			my @row = ();
 			for ($xmin..$xmax) -> $x {
-				my $glyph = self.get_glyph_xy($x, $y);
+				my $glyph = self.get-glyph-xy($x, $y);
 
 				if %markers.keys.elems > 0 {
-					my $c = Coord.from_ints($x, $y);
+					my $c = Coord.from-ints($x, $y);
 					if %markers{$c.Str}:exists {
 						$glyph = %markers{$c.Str};
 					}
@@ -302,7 +302,7 @@ class AGrid is export {
 			my @cols = @rows[$r].split('', :skip-empty);
 			for 0..@cols.end -> $c {
 				if @cols[$c] ne $.default {
-					self.set_xy($c, $r, @cols[$c]);
+					self.set-xy($c, $r, @cols[$c]);
 				}
 			}
 		}

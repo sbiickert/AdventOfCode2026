@@ -10,32 +10,32 @@ subtest 'Coord', {
 
 	subtest 'construction and equality', {
 		is ~$c, '[10,30]', 'Str';
-		is-deeply Coord.from_str(~$c), $c,         'from_str round-trips Str';
+		is-deeply Coord.from-str(~$c), $c,         'from-str round-trips Str';
 		is-deeply Coord.new(x => 10, y => 30), $c, 'coords with equal values are eqv';
 		nok $c eqv $other,                         'coords with different values are not eqv';
 		is-deeply $origin, Coord.new(x => 0, y => 0), 'origin is (0,0)';
 	}
 
 	subtest 'distances', {
-		is-deeply $c.delta($other), Coord.from_ints(-5, -10), 'delta';
-		is-approx $c.distance_to($other), 11.1803398874989,  'distance_to';
-		is $c.manhattan_distance_to($other), 15,             'manhattan_distance_to';
+		is-deeply $c.delta($other), Coord.from-ints(-5, -10), 'delta';
+		is-approx $c.distance-to($other), 11.1803398874989,  'distance-to';
+		is $c.manhattan-distance-to($other), 15,             'manhattan-distance-to';
 	}
 
-	subtest 'get_offset', {
+	subtest 'get-offset', {
 		for ('N', 0, -1),     # compass direction
 		    ('<', -1, 0),     # alias
 		    ('?', 0, 0)       # unknown direction gives no offset
 		-> ($dir, $x, $y) {
-			is-deeply Coord.get_offset($dir), Coord.from_ints($x, $y), "get_offset('$dir')";
+			is-deeply Coord.get-offset($dir), Coord.from-ints($x, $y), "get-offset('$dir')";
 		}
 	}
 
 	subtest 'adjacency', {
-		my $diagonal = Coord.from_ints(1, 1);
-		nok $origin.is_adjacent($diagonal),                        'diagonal is not adjacent under ROOK';
-		ok  $origin.is_adjacent($diagonal, AdjacencyRule::BISHOP), 'diagonal is adjacent under BISHOP';
-		is +$origin.get_adjacent_coords, 4,                        'ROOK gives 4 adjacent coords';
+		my $diagonal = Coord.from-ints(1, 1);
+		nok $origin.is-adjacent($diagonal),                        'diagonal is not adjacent under ROOK';
+		ok  $origin.is-adjacent($diagonal, AdjacencyRule::BISHOP), 'diagonal is adjacent under BISHOP';
+		is +$origin.get-adjacent-coords, 4,                        'ROOK gives 4 adjacent coords';
 	}
 }
 
@@ -44,7 +44,7 @@ subtest 'Position', {
 	is-deeply $p.coord, Coord.origin, 'coord is set';
 	is $p.dir, 'N', 'direction defaults to N';
 
-	$p = Position.new(coord => Coord.from_ints(5, 5), dir => '<');
+	$p = Position.new(coord => Coord.from-ints(5, 5), dir => '<');
 	is $p.dir, 'W', "direction alias '<' resolves to W";
 
 	$p .= turn('CW');
@@ -54,16 +54,16 @@ subtest 'Position', {
 	$p .= turn('CCW') for ^6;
 	is $p.dir, 'E', 'turn CCW six times';
 
-	$p .= move_forward;
-	is-deeply $p.coord, Coord.from_ints(6, 5),  'move forward 1';
-	$p .= move_forward(4);
-	is-deeply $p.coord, Coord.from_ints(10, 5), 'move forward 4';
+	$p .= move-forward;
+	is-deeply $p.coord, Coord.from-ints(6, 5),  'move forward 1';
+	$p .= move-forward(4);
+	is-deeply $p.coord, Coord.from-ints(10, 5), 'move forward 4';
 
 	my $bad   = Position.new(coord => Coord.origin, dir => '?');
-	my $moved = $bad.move_forward;
+	my $moved = $bad.move-forward;
 	is $bad.dir, 'N', 'invalid direction falls back to N';
 	nok $bad eqv $moved, 'moving produces a different position';
-	is-deeply $moved.coord, Coord.from_ints(0, -1), 'moved north';
+	is-deeply $moved.coord, Coord.from-ints(0, -1), 'moved north';
 }
 
 subtest 'Extent1D', {
@@ -104,29 +104,29 @@ subtest 'Extent1D', {
 }
 
 subtest 'Extent', {
-	my $p1 = Coord.from_ints(-1, 1);
-	my $p2 = Coord.from_ints( 2, 8);
-	my $p3 = Coord.from_ints( 3, 3);
-	my $p4 = Coord.from_ints( 4, 4);
+	my $p1 = Coord.from-ints(-1, 1);
+	my $p2 = Coord.from-ints( 2, 8);
+	my $p3 = Coord.from-ints( 3, 3);
+	my $p4 = Coord.from-ints( 4, 4);
 
-	my $two   = Extent.from_coords(($p1, $p2));
-	my $three = Extent.from_coords(($p3, $p2, $p1));
-	my $grown = $three.expand_to_fit($p4);
+	my $two   = Extent.from-coords(($p1, $p2));
+	my $three = Extent.from-coords(($p3, $p2, $p1));
+	my $grown = $three.expand-to-fit($p4);
 
 	subtest 'construction', {
-		is-deeply $two,   Extent.from_ints(-1, 1, 2, 8), 'from_coords with two coords';
-		is-deeply $three, Extent.from_ints(-1, 1, 3, 8), 'from_coords with three coords';
-		is-deeply $grown, Extent.from_ints(-1, 1, 4, 8), 'expand_to_fit';
+		is-deeply $two,   Extent.from-ints(-1, 1, 2, 8), 'from-coords with two coords';
+		is-deeply $three, Extent.from-ints(-1, 1, 3, 8), 'from-coords with three coords';
+		is-deeply $grown, Extent.from-ints(-1, 1, 4, 8), 'expand-to-fit';
 		is-deeply $grown.clone, $grown,                  'clone is eqv to the original';
 	}
 
 	subtest 'corners and size', {
-		is-deeply $grown.nw, Coord.from_ints(-1, 1), 'nw';
-		is-deeply $grown.se, Coord.from_ints( 4, 8), 'se';
+		is-deeply $grown.nw, Coord.from-ints(-1, 1), 'nw';
+		is-deeply $grown.se, Coord.from-ints( 4, 8), 'se';
 		is $three.width,  5,  'width';
 		is $three.height, 8,  'height';
 		is $three.area,   40, 'area';
-		is +$three.all_coords, $three.area, 'all_coords returns one coord per cell';
+		is +$three.all-coords, $three.area, 'all-coords returns one coord per cell';
 	}
 
 	subtest 'contains', {
@@ -135,11 +135,11 @@ subtest 'Extent', {
 	}
 
 	subtest 'inset', {
-		is-deeply $two.inset(1), Extent.from_ints(0, 2, 1, 7), 'inset by 1';
-		nok $two.inset(2).is_empty, 'inset past zero width is not empty';
+		is-deeply $two.inset(1), Extent.from-ints(0, 2, 1, 7), 'inset by 1';
+		nok $two.inset(2).is-empty, 'inset past zero width is not empty';
 	}
 
-	my $base = Extent.from_ints(1, 1, 10, 10);
+	my $base = Extent.from-ints(1, 1, 10, 10);
 
 	subtest 'intersect', {
 		for (5, 5, 12, 12)  => (5, 5, 10, 10),    # overlapping corner
@@ -147,10 +147,10 @@ subtest 'Extent', {
 		    (1, 1, 12, 2)   => (1, 1, 10, 2),     # strip along an edge
 		    (1, 10, 10, 20) => (1, 10, 10, 10)    # sharing one row
 		-> $case {
-			my $other = Extent.from_ints(|$case.key);
-			is-deeply $base.intersect($other), Extent.from_ints(|$case.value), "intersect with $other";
+			my $other = Extent.from-ints(|$case.key);
+			is-deeply $base.intersect($other), Extent.from-ints(|$case.value), "intersect with $other";
 		}
-		ok $base.intersect(Extent.from_ints(11, 11, 12, 12)).is_empty, 'disjoint intersect is empty';
+		ok $base.intersect(Extent.from-ints(11, 11, 12, 12)).is-empty, 'disjoint intersect is empty';
 	}
 
 	subtest 'union', {
@@ -166,8 +166,8 @@ subtest 'Extent', {
 			(1, 10, 10, 20)  => ((1,10,10,10), (1,1,10,9), (1,11,10,20));
 
 		for @cases -> $case {
-			my $other    = Extent.from_ints(|$case.key);
-			my @expected = $case.value.map({ Extent.from_ints(|$_) });
+			my $other    = Extent.from-ints(|$case.key);
+			my @expected = $case.value.map({ Extent.from-ints(|$_) });
 			is-deeply sorted($base.union($other)), sorted(@expected), "union with $other";
 		}
 	}

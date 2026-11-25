@@ -7,8 +7,8 @@ use AOC::Util;
 
 sub MAIN(Str $type = 'test', $index = 0) {
     say "Advent of Code 2026, Day 0: Test Zero";
-    my $file = "../Input/day00_{ $type }.txt"
-    my @input = read_grouped_input($file, $index);
+    my $file = "../Input/day00_{ $type }.txt";
+    my @input = read-grouped-input($file, $index);
 
     my $p1 = solve-part-one(@input);
     say "Part One: $p1";

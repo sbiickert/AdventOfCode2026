@@ -17,18 +17,18 @@ subtest 'Grid', {
 	# The nested subtests share one grid and run in order: each step builds on the last.
 	my $grid = Grid.new(default => '.', rule => AdjacencyRule::ROOK);
 
-	my $a      = Coord.from_ints(1, 1);
-	my $b      = Coord.from_ints(2, 2);
-	my $unset  = Coord.from_ints(3, 3);
-	my $d      = Coord.from_ints(4, 4);
-	my $elf    = Coord.from_ints(1, 4);
-	my $goblin = Coord.from_ints(2, 4);
-	my $santa  = Coord.from_ints(3, 4);
+	my $a      = Coord.from-ints(1, 1);
+	my $b      = Coord.from-ints(2, 2);
+	my $unset  = Coord.from-ints(3, 3);
+	my $d      = Coord.from-ints(4, 4);
+	my $elf    = Coord.from-ints(1, 4);
+	my $goblin = Coord.from-ints(2, 4);
+	my $santa  = Coord.from-ints(3, 4);
 
 	subtest 'new grid', {
 		is $grid.default, '.',                     'default value';
 		cmp-ok $grid.rule, '===', AdjacencyRule::ROOK, 'adjacency rule';
-		ok $grid.extent.is_empty,                  'extent starts empty';
+		ok $grid.extent.is-empty,                  'extent starts empty';
 	}
 
 	subtest 'set and get', {
@@ -47,13 +47,13 @@ subtest 'Grid', {
 		$grid.set($goblin, %(id => 2, type => 'Goblin', hp => 95, glyph => 'G'));
 		$grid.set($santa,  ['S', 3, 'Santa', 110]);
 
-		is $grid.get_glyph($elf),    'E', 'object doing GridGlyph uses its glyph method';
-		is $grid.get_glyph($goblin), 'G', "hash uses its 'glyph' key";
-		is $grid.get_glyph($santa),  'S', 'array uses its first element';
+		is $grid.get-glyph($elf),    'E', 'object doing GridGlyph uses its glyph method';
+		is $grid.get-glyph($goblin), 'G', "hash uses its 'glyph' key";
+		is $grid.get-glyph($santa),  'S', 'array uses its first element';
 	}
 
 	subtest 'extent', {
-		is-deeply $grid.extent, Extent.from_ints(1, 1, 4, 4), 'extent grows to fit set coords';
+		is-deeply $grid.extent, Extent.from-ints(1, 1, 4, 4), 'extent grows to fit set coords';
 	}
 
 	subtest 'coords', {
@@ -75,17 +75,17 @@ subtest 'Grid', {
 
 	subtest 'neighbors', {
 		is-deeply $grid.neighbors($b),
-			[Coord.from_ints(2, 1), Coord.from_ints(3, 2), Coord.from_ints(2, 3), Coord.from_ints(1, 2)],
+			[Coord.from-ints(2, 1), Coord.from-ints(3, 2), Coord.from-ints(2, 3), Coord.from-ints(1, 2)],
 			'ROOK neighbours in N, E, S, W order';
 	}
 
 	subtest 'sprint', {
 		is $grid.sprint, "A . . . \n. B . . \n. . B . \nE G S D \n", 'renders the grid';
 
-		is $grid.sprint(invert_y => True), "E G S D \n. . B . \n. B . . \nA . . . \n",
+		is $grid.sprint(invert-y => True), "E G S D \n. . B . \n. B . . \nA . . . \n",
 			'renders with y inverted';
 
-		is $grid.sprint(markers => %(Coord.from_ints(4, 1) => '*')),
+		is $grid.sprint(markers => %(Coord.from-ints(4, 1) => '*')),
 			"A . . * \n. B . . \n. . B . \nE G S D \n",
 			'markers override cell glyphs';
 	}
@@ -95,13 +95,13 @@ subtest 'Grid', {
 		is $grid.get($unset), '.', 'cleared coord returns the default';
 
 		my $original-extent = $grid.extent;
-		my $far = Coord.from_ints(100, 100);
+		my $far = Coord.from-ints(100, 100);
 
 		$grid.set($far, 'X');
 		is-deeply $grid.extent.se, $far, 'extent grows to fit a distant coord';
 
-		$grid.clear($far, reset_extent => True);
-		is-deeply $grid.extent, $original-extent, 'reset_extent shrinks the extent again';
+		$grid.clear($far, reset-extent => True);
+		is-deeply $grid.extent, $original-extent, 'reset-extent shrinks the extent again';
 	}
 }
 
@@ -110,7 +110,7 @@ subtest 'AGrid', {
 
 	is $grid.default, '.',                         'default value';
 	cmp-ok $grid.rule, '===', AdjacencyRule::ROOK, 'adjacency rule';
-	nok $grid.extent.is_empty,                     'extent is not empty';
+	nok $grid.extent.is-empty,                     'extent is not empty';
 	is $grid.extent.area, 99,                      'area is (x+1) * (y+1)';
 }
 

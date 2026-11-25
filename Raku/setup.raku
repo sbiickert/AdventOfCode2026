@@ -4,15 +4,15 @@ constant TEMPLATE = 'aoc_template.raku';
 my $tag := '<##>';
 my $year := 2026;
 
-sub MAIN(Int $day, Str $challenge_name) {
+sub MAIN(Int $day, Str $challenge-name) {
 	my @lines = TEMPLATE.IO.lines;
-	my $pad_day = '%02s'.sprintf($day);
+	my $pad-day = '%02s'.sprintf($day);
 	@lines = @lines.map(-> $line {
-		my $temp = $line.subst("$tag, Day $tag: $tag", "$year, Day $day: $challenge_name", :g);
-		$temp = $temp.subst($tag, $pad_day);
+		my $temp = $line.subst("$tag, Day $tag: $tag", "$year, Day $day: $challenge-name", :g);
+		$temp = $temp.subst($tag, $pad-day);
 	});
 	
-	my $filename = "day$pad_day.raku";
+	my $filename = "day$pad-day.raku";
 	!$filename.IO.e or die "File $filename already exists. Exiting.";
 	
 	my $fh = open $filename, :w;

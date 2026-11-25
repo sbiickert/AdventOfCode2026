@@ -7,14 +7,15 @@ use AOC::Util;
 
 my $TYPE := 'test';
 
-sub MAIN(Str $file = "../Input/day<##>_{ $TYPE }.txt") {
+sub MAIN(Str $type = 'test', $index = 0) {
     say "Advent of Code <##>, Day <##>: <##>";
-    my @input = read_input($file);
+    my $file = "../Input/day<##>_{ $type }.txt";
+    my @input = read-grouped-input($file, $index);
 
-    my $p1 = solve_part_one(@input);
+    my $p1 = solve-part-one(@input);
     say "Part One: $p1";
 
-    my $p2 = solve_part_two(@input);
+    my $p2 = solve-part-two(@input);
     say "Part Two: $p2";
 }
 
