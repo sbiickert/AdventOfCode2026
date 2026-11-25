@@ -463,51 +463,70 @@ class Extent is export {
 		return Extent.from-ints($common-min-x, $common-min-y, $common-max-x, $common-max-y);
 	}
 	
-	# union 
+	# Union of two extents, returned as non-overlapping pieces that cover both.
+	#
+	# The edges of the overlap cut each extent into a 3x3 grid of bands, like
+	# a noughts-and-crosses board drawn around the overlap (see cells-around):
+	#
+	#                x before    x inside    x after
+	#              +-----------+-----------+-----------+
+	#     y before |           |           |           |
+	#              +-----------+-----------+-----------+
+	#     y inside |           |  OVERLAP  |           |
+	#              +-----------+-----------+-----------+
+	#     y after  |           |           |           |
+	#              +-----------+-----------+-----------+
+	#
+	# Cells that would have zero width or height are dropped. The middle cell
+	# is the overlap itself, so it's returned once; every other cell is a
+	# piece of that extent lying outside the overlap. For example:
+	#
+	#     +---------+                    +----+----+
+	#     | self    |                    | s  | s  |
+	#     |    +----+----+               +----+----+----+
+	#     |    |####|    |     ==>       | s  |####| o  |
+	#     +----+----+    |               +----+----+----+
+	#          |  other  |                    | o  | o  |
+	#          +---------+                    +----+----+
+	#
+	#     #### = the overlap    s = pieces of self    o = pieces of other
 	method union( Extent $other --> Array of Extent ) {
-		my Extent @results = ();
-		if self.is-empty || $other.is-empty { return @results; }
-		#say "union of " ~ self.Str ~ " and " ~ $other.Str;
-		if self eqv $other { return self.clone; }
+		my Extent @pieces;
+		return @pieces if self.is-empty || $other.is-empty;
 
-		my Extent $e-int = self.intersect($other);
-		if $e-int.is-empty {
-			#say "no valid intersection. Returning clones of self and other";
-			@results.push( self.clone, $other.clone );
-			return @results;
+		my $overlap = self.intersect($other);
+		if $overlap.is-empty {
+			@pieces.push: self.clone, $other.clone;
+			return @pieces;
 		}
-		#say "the intersection is " . $e-int.to_str;
 
-		@results.push($e-int);
-		for ( self, $other ) -> $e {
-			if $e eqv $e-int { next; }
-
-			if ($e.nw.x < $e-int.nw.x) { # xmin
-				if ($e.nw.y < $e-int.nw.y) { # ymin
-					@results.push( Extent.from-ints($e.nw.x, $e.nw.y, $e-int.nw.x-1, $e-int.nw.y-1) );
-				}
-				if ($e.se.y > $e-int.se.y) { # ymax
-					@results.push( Extent.from-ints($e.nw.x, $e-int.se.y+1, $e-int.nw.x-1, $e.se.y) );
-				}
-				@results.push( Extent.from-ints($e.nw.x, $e-int.nw.y, $e-int.nw.x-1, $e-int.se.y) );
-			}
-			if ($e-int.se.x < $e.se.x) {
-				if ($e.nw.y < $e-int.nw.y) { # ymin
-					@results.push( Extent.from-ints($e-int.se.x+1, $e.nw.y, $e.se.x, $e-int.nw.y-1) );
-				}
-				if ($e.se.y > $e-int.se.y) { # ymax
-					@results.push( Extent.from-ints($e-int.se.x+1, $e-int.se.y+1, $e.se.x, $e.se.y) );
-				}
-				@results.push( Extent.from-ints($e-int.se.x+1, $e-int.nw.y, $e.se.x, $e-int.se.y) );
-			}
-			if ($e.nw.y < $e-int.nw.y) { #ymin
-				@results.push( Extent.from-ints($e-int.nw.x, $e.nw.y, $e-int.se.x, $e-int.nw.y-1) );
-			}
-			if ($e-int.se.y < $e.se.y) { #ymax
-				@results.push( Extent.from-ints($e-int.nw.x, $e-int.se.y+1, $e-int.se.x, $e.se.y) );
-			}
+		@pieces.push: $overlap;
+		for self, $other -> $e {
+			@pieces.append: $e.cells-around($overlap).grep({ !($_ eqv $overlap) });
 		}
-		return @results;
+		return @pieces;
+	}
+
+	# Cut this extent into up to nine cells along the edges of $other:
+	# the part they share, plus the bands of this extent around it.
+	# Empty cells are left out. If the extents don't overlap, the result
+	# is a copy of this extent; if this extent is empty, the result is empty.
+	method cells-around( Extent $other --> List ) {
+		return () if self.is-empty;
+		my $inner = self.intersect($other);
+		return (self.clone,) if $inner.is-empty;
+
+		my @columns = bands($.min.x, $.max.x, $inner.min.x, $inner.max.x);
+		my @rows    = bands($.min.y, $.max.y, $inner.min.y, $inner.max.y);
+		return (@columns X @rows).map(-> ($xs, $ys) {
+			Extent.from-ints($xs.min, $ys.min, $xs.max, $ys.max)
+		}).List;
+	}
+
+	# Split the range lo..hi into the parts before, inside and after cut-lo..cut-hi,
+	# dropping any that are empty.
+	sub bands( Int $lo, Int $hi, Int $cut-lo, Int $cut-hi ) {
+		($lo .. $cut-lo - 1, $cut-lo .. $cut-hi, $cut-hi + 1 .. $hi).grep(*.elems)
 	}
 	
 	method inset( Int $inset --> Extent ) {

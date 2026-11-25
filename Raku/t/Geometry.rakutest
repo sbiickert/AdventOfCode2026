@@ -170,9 +170,54 @@ subtest 'Extent', {
 			my @expected = $case.value.map({ Extent.from-ints(|$_) });
 			is-deeply sorted($base.union($other)), sorted(@expected), "union with $other";
 		}
+
+		is-deeply $base.union($base.clone).List, ($base,), 'union with itself is a single piece';
+		is +$base.union(Extent.new), 0, 'union with an empty extent is empty';
+	}
+
+	subtest 'union pieces exactly cover both extents', {
+		# Properties that should hold for any pair of extents, whatever the pieces are.
+		for (5, 5, 12, 12), (5, 5, 7, 7), (1, 1, 12, 2), (11, 11, 12, 12),
+		    (0, 3, 20, 4), (1, 1, 10, 10)
+		-> @ints {
+			my $other  = Extent.from-ints(|@ints);
+			my @pieces = $base.union($other);
+
+			is @pieces.map(*.area).sum,
+				$base.area + $other.area - $base.intersect($other).area,
+				"union with $other: areas add up";
+			ok no-overlaps(@pieces), "union with $other: pieces don't overlap";
+		}
+	}
+
+	subtest 'cells-around', {
+		# Each case: the other extent, and the cells $base should be cut into.
+		my @cases =
+			(4, 4, 7, 7)    => ((1,1,3,3), (1,4,3,7), (1,8,3,10),        # inside: full 3x3 grid
+			                    (4,1,7,3), (4,4,7,7), (4,8,7,10),
+			                    (8,1,10,3), (8,4,10,7), (8,8,10,10)),
+			(1, 1, 4, 4)    => ((1,1,4,4), (1,5,4,10),                   # shares a corner: 2x2
+			                    (5,1,10,4), (5,5,10,10)),
+			(5, 5, 12, 12)  => ((1,1,4,4), (1,5,4,10),                   # pokes outside: clipped
+			                    (5,1,10,4), (5,5,10,10)),
+			(0, 3, 20, 4)   => ((1,1,10,2), (1,3,10,4), (1,5,10,10)),    # crosses it: three strips
+			(1, 1, 10, 10)  => ((1,1,10,10),),                           # same extent: one cell
+			(11, 11, 12, 12) => ((1,1,10,10),);                          # disjoint: a copy of itself
+
+		for @cases -> $case {
+			my $other    = Extent.from-ints(|$case.key);
+			my @expected = $case.value.map({ Extent.from-ints(|$_) });
+			is-deeply sorted($base.cells-around($other)), sorted(@expected), "cells around $other";
+		}
+
+		is +Extent.new.cells-around($base), 0, 'empty extent has no cells';
 	}
 }
 
 done-testing;
 
 sub sorted(@extents) { @extents.sort(~*).List }
+
+sub no-overlaps(@extents --> Bool) {
+	so @extents.combinations(2).map(-> ($a, $b) { $a.intersect($b).is-empty }).all
+}
