@@ -4,3 +4,7 @@ Swift/AoC2026/build
 Swift/AoC2026/build/Release
 /Raku/.precomp
 .DS_Store
+*.repo-id
+*.lock
+*.TAG
+/Raku/lib/.precomp
